@@ -7,6 +7,13 @@ const StealthPlugin = require('puppeteer-extra-plugin-stealth')
 puppeteer.use(StealthPlugin())
 
 
+//document.querySelectorAll("a[data-what='0']")
+
+//document.querySelectorAll("a[data-what='1']")
+
+//document.querySelectorAll("[data-sh-gr='os']")
+
+
 export interface ISearch {
   productNameList: string[],
   productPriceList: string[],
