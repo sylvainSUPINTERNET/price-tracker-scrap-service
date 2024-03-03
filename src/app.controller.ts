@@ -6,7 +6,7 @@ import express, {Request, Response} from 'express';
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  @Get()
+  @Get("/search")
   async searchShopping( @Res() res: Response, @Query("q") qParam) {
     
     try {
