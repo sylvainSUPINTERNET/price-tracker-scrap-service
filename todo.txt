@@ -1,0 +1,6 @@
+mobile search "t" 
+
+
+=> demarre un launch browser 
+=> faire le search 
+=> close le browser et retourne le resultat
