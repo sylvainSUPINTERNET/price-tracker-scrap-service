@@ -6,6 +6,9 @@ import express, {Request, Response} from 'express';
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
+
+  // http://localhost:3000/search?q=air%20max%201
+
   @Get("/search")
   async searchShopping( @Res() res: Response, @Query("q") qParam) {
     

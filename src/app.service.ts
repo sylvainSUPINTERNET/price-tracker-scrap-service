@@ -7,25 +7,34 @@ const StealthPlugin = require('puppeteer-extra-plugin-stealth')
 puppeteer.use(StealthPlugin())
 
 
-//document.querySelectorAll("a[data-what='0']")
+//document.querySelectorAll("a[data-what='0']")[0].href
 
-//document.querySelectorAll("a[data-what='1']")
+//document.querySelectorAll("a[data-what='1']")[0].innerText
 
-//document.querySelectorAll("[data-sh-gr='os']")
+//document.querySelectorAll("[data-sh-gr='os']")[0].childNodes[0].children[1].childNodes[0].childNodes[0].childNodes[1].childNodes[0].childNodes[1].childNodes[2].innerText
 
 
+/*
 export interface ISearch {
   productNameList: string[],
   productPriceList: string[],
   productStoreList: string[],
   imgLinks: string[]
-}
+}*/
 
+export interface ISearch {
+  name: string,
+  price: string,
+  store: string,
+  imgUrl: string,
+  link: string,
+  rate: string
+}
 
 @Injectable()
 export class AppService {
 
-  async searchScrapShopping(qParam:string): Promise<ISearch> { 
+  async searchScrapShopping(qParam:string): Promise<ISearch[]> { 
     const browser = await puppeteer.launch({
       headless: false,
       args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -52,68 +61,47 @@ export class AppService {
       // m=cdos,hsm,jsa,d,csi:411 [Violation] Permissions policy violation: unload is not allowed in this document.
       await new Promise( resolve => setTimeout(resolve, 5000));
 
-      const productDetails = await page.evaluate(() => {
+      let productDetailsList: ISearch[] = [];
 
-        const imgLinkImgList = [];
-        const linkHrefList = [];
-        const elements = document.querySelectorAll('a[data-merchant-id]')
+      await page.waitForSelector("a[data-what='0']");
+      await page.waitForSelector("a[data-what='1']");
+      await page.waitForSelector("[data-sh-gr='os']");
 
-        for ( const element of elements ) {
-        // get image for each shopping link
-        // document.querySelectorAll('a[data-merchant-id]')[1].children[1].children[0].src
-          const link = element.getAttribute('href');
-          linkHrefList.push(`https://www.google.fr/${link}`);
-        
-          const child1 = element.children[1];
-        // children 2 is variable ( must loop to find img element )
-          for ( const child of child1.children ) {
-            if ( child.tagName === "IMG" ) {
-              //@ts-ignore
-              imgLinkImgList.push(child.src);
-            }
-          }
-
-        }
-
-        //document.querySelectorAll('a[data-merchant-id]')[0].children[3].children[0].children[IDX]
-        // IDX = 0 => nom
-        // IDX = 1 => prix
-        // IDX = 2 => magasin
-        const productDetailList = [];
-        for ( const element of document.querySelectorAll('a[data-merchant-id]') ) {
-          const child2 = element.lastChild.childNodes[0].childNodes;
-
-          //@ts-ignore
-          console.log("NAME : ", child2[0].innerText);
-          //@ts-ignore
-          console.log("PRICE : ", child2[1].innerText);
-          //@ts-ignore
-          console.log("STORE : ", child2[2].innerText);
-
-          productDetailList.push({
-                      //@ts-ignore
-            name: child2[0].innerText,
-                      //@ts-ignore
-            price: child2[1].innerText,
-                     //@ts-ignore
-            store: child2[2].innerText
-          })
-
-        }
-        return Array.from(productDetailList).map( (element, idx) => {
-          return {
-            name: element.name,
-            price: element.price,
-            store: element.store,
-            imgUrl: imgLinkImgList[idx],
-            linkHrefList: linkHrefList[idx]
-            };
-        });
-
+      const imgList = await page.evaluate(() => {
+        //@ts-ignore
+        return Array.from(document.querySelectorAll("a[data-what='0']")).map(el=>el.querySelector('img').src);
       });
 
+      const productNameList = await page.evaluate(() => {
+        //@ts-ignore
+        return Array.from(document.querySelectorAll("a[data-what='1']")).map( (element) => element.innerText.replace("\n", " "));
+      });
+
+      
+      const productPriceList = await page.evaluate(() => {
+        //@ts-ignore
+        return Array.from(document.querySelectorAll("[data-sh-gr='os']")).map( (element) => element.innerText.split("€")[0]);
+      });
+
+      const productLinkList = await page.evaluate(() => { 
+        //@ts-ignore
+        return Array.from(document.querySelectorAll("[data-sh-gr='os']")).map(x=>x.querySelector('a').href)
+      });
+
+      for (let i = 0; i < imgList.length; i++) {
+        const img = imgList[i];
+        const name = productNameList[i];
+        const price = productPriceList[i];
+        const store = "Google Shopping";
+        const rate = "";
+        const link = productLinkList[i];
+        const imgUrl = img;
+        productDetailsList.push({name, price, store, imgUrl, link, rate});
+      }
+
       browser.close();
-      return new Promise( (resolve, _reject) => resolve(productDetails));
+      return new Promise( (resolve, _reject) => resolve(productDetailsList));
+      //return new Promise( (resolve, _reject) => resolve(productDetails));
 
     } catch ( e ) {
       await browser.close();
